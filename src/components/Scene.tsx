@@ -4,6 +4,7 @@ import { Stars, Sparkles, Grid } from '@react-three/drei';
 import * as THREE from 'three';
 import { useGameStore } from '../store/useGameStore';
 import Sphere from './Sphere';
+import { SphereBurstEffects } from './SphereBurstEffect';
 
 // Animated ambient mood lights
 function MoodLights() {
@@ -79,6 +80,9 @@ function SceneContent() {
       {activeSpheres.map((s) => (
         <Sphere key={s.id} sphere={s} />
       ))}
+
+      {/* 3D Particle Bursts */}
+      <SphereBurstEffects />
     </>
   );
 }

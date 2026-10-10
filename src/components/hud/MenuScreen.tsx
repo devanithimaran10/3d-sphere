@@ -1,4 +1,5 @@
 import { createPortal } from 'react-dom';
+import { Download } from 'lucide-react';
 import { useGameStore } from '../../store/useGameStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { MODES } from './modes';
@@ -6,7 +7,6 @@ import { DiffPips, RulesLegend } from './shared';
 import { beginSession } from './actions';
 import { SettingsButton } from './SettingsPanel';
 import { HistoryButton } from './HistoryPanel';
-import { SensorBadge } from './SensorBadge';
 
 export function MenuScreen() {
   const { mode, setMode } = useGameStore();
@@ -24,7 +24,15 @@ export function MenuScreen() {
           data-motion={reducedMotion ? 'reduced' : 'normal'}
           data-clarity={clarityMode ? 'on' : 'off'}
         >
-          <SensorBadge />
+          <a
+            href="/sphere-trainer/sphere-trainer.zip"
+            download="sphere-trainer.zip"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 text-xs font-mono font-medium transition-all shadow-sm"
+            title="Download clean project ZIP archive"
+          >
+            <Download size={13} />
+            <span>Download ZIP</span>
+          </a>
           <HistoryButton />
           <SettingsButton />
         </div>,
@@ -57,7 +65,19 @@ export function MenuScreen() {
             onClick={() => setMode(m.id)}
           >
             <div className="flex items-start justify-between mb-3">
-              <span className="text-2xl" style={{ color: m.color }}>{m.icon}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-2xl" style={{ color: m.color }}>{m.icon}</span>
+                {m.id === 'micro-reach' && (
+                  <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
+                    ★ Universal
+                  </span>
+                )}
+                {m.id === 'rule-switch' && (
+                  <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-400/30">
+                    Adaptive
+                  </span>
+                )}
+              </div>
               <DiffPips n={m.difficulty} color={m.color} />
             </div>
             <h3
@@ -129,6 +149,10 @@ export function MenuScreen() {
             Default Rules
           </p>
           <RulesLegend />
+          <div className="mt-3 pt-2.5 border-t border-white/5 flex items-center gap-2 text-[10px] text-cyan-300/80 font-mono">
+            <span>🎮 Universal Input:</span>
+            <span className="text-slate-400">Mouse Clicks/Swipes, Keyboard (←, →, Space), or On-Screen Dock</span>
+          </div>
         </div>
         <div className="flex flex-col items-center gap-3">
           <button className="btn-primary" onClick={beginSession}>

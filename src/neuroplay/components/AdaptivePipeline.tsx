@@ -9,7 +9,7 @@ export function AdaptivePipeline() {
             <Layers className="text-teal-400" size={18} /> Closed-Loop AI System Architecture
           </h3>
           <p className="text-xs text-slate-400">
-            Real-time multi-layer intelligence pipeline connecting sensor inputs, state estimation, safety, and RL adaptation.
+            Real-time multi-layer intelligence pipeline connecting interaction telemetry, state estimation, safety, and RL adaptation.
           </p>
         </div>
         <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-teal-500/10 text-teal-400 border border-teal-500/30 self-start sm:self-auto">
@@ -20,11 +20,11 @@ export function AdaptivePipeline() {
       {/* Visual System Architecture Diagram matching SSN Presentation */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs font-mono">
         
-        {/* Layer 1: Input & Sensors */}
+        {/* Layer 1: Input & Telemetry */}
         <div className="p-4 rounded-2xl bg-slate-900/80 border border-blue-500/30 flex flex-col justify-between space-y-3">
           <div>
             <span className="text-[10px] font-bold uppercase tracking-widest text-blue-400 flex items-center gap-1.5 mb-2">
-              <Activity size={13} /> 1. Input &amp; Sensors
+              <Activity size={13} /> 1. Input &amp; Telemetry
             </span>
             <div className="space-y-1.5 text-[11px] text-slate-300">
               <div className="p-2 rounded-lg bg-slate-950/60 border border-slate-800">
@@ -32,7 +32,7 @@ export function AdaptivePipeline() {
                 <span className="text-[10px] text-slate-400">14 Active Cognitive/Motor Tasks</span>
               </div>
               <div className="p-2 rounded-lg bg-slate-950/60 border border-slate-800">
-                <span className="font-semibold text-slate-100 block">Sensors &amp; Timing</span>
+                <span className="font-semibold text-slate-100 block">Interaction &amp; Timing</span>
                 <span className="text-[10px] text-slate-400">Reaction RT (ms), Drift, Gestures</span>
               </div>
             </div>

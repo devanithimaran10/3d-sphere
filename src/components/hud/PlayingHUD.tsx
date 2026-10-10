@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
+import { Volume2, VolumeX, Flame } from 'lucide-react';
 import { useGameStore } from '../../store/useGameStore';
-import { useSettingsStore } from '../../store/useSettingsStore';
 import type { GameMode, SphereColor, SphereAction } from '../../types';
 import { MODES } from './modes';
 import { DiffPips, RulesLegend } from './shared';
 import { AIInsightsPanel } from './AIInsightsPanel';
-import { SensorBadge } from './SensorBadge';
+import { sound } from '../../services/audioService';
+import { useBurstStore } from '../../store/useBurstStore';
 
 export function PlayingHUD() {
   const {
@@ -14,12 +15,12 @@ export function PlayingHUD() {
     spawnSphere, registerInhibition, registerMiss,
     triggerRuleSwitch,
   } = useGameStore();
-  const tapToSelect = useSettingsStore((s) => s.tapToSelect);
 
   const spawnTimer    = useRef<ReturnType<typeof setTimeout> | null>(null);
   const switchTimer   = useRef<ReturnType<typeof setTimeout> | null>(null);
   const gameReadyRef  = useRef(false);
   const [countdown, setCountdown] = useState<number | null>(3);
+  const [isMuted, setIsMuted] = useState(sound.isMuted());
 
   // Session countdown
   useEffect(() => {
@@ -29,10 +30,11 @@ export function PlayingHUD() {
 
   // 3-2-1-GO! countdown before spheres spawn
   useEffect(() => {
+    sound.playCountdown(3);
     const timers: ReturnType<typeof setTimeout>[] = [];
-    timers.push(setTimeout(() => setCountdown(2), 900));
-    timers.push(setTimeout(() => setCountdown(1), 1800));
-    timers.push(setTimeout(() => setCountdown(0), 2700));
+    timers.push(setTimeout(() => { setCountdown(2); sound.playCountdown(2); }, 900));
+    timers.push(setTimeout(() => { setCountdown(1); sound.playCountdown(1); }, 1800));
+    timers.push(setTimeout(() => { setCountdown(0); sound.playCountdown(0); }, 2700));
     timers.push(setTimeout(() => { setCountdown(null); gameReadyRef.current = true; }, 3400));
     return () => timers.forEach(clearTimeout);
   }, []);
@@ -56,6 +58,12 @@ export function PlayingHUD() {
         (s) => !s.isDistractor && s.color !== 'red' && rules[s.color] === action
       );
       if (target) {
+        sound.playHit();
+        useBurstStore.getState().triggerBurst(
+          target.position,
+          target.color === 'green' ? '#00ff88' : target.color === 'blue' ? '#00d4ff' : '#ffd60a',
+          action === 'left' ? '← LEFT' : action === 'right' ? 'RIGHT →' : 'HELD'
+        );
         registerInput({
           sphereId: target.id,
           action,
@@ -65,6 +73,7 @@ export function PlayingHUD() {
       }
     };
     window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
   }, []);
 
   // Sphere spawn loop
@@ -154,6 +163,7 @@ export function PlayingHUD() {
       const delay = (7000 + Math.random() * 9000) / Math.max(0.3, adaptive.cognitiveLoad);
       switchTimer.current = setTimeout(() => {
         if (useGameStore.getState().paused) { schedule(); return; }
+        sound.playRuleSwitch();
         triggerRuleSwitch();
         schedule();
       }, delay);
@@ -182,8 +192,7 @@ export function PlayingHUD() {
   const diffLevel = Math.round(adaptive.cognitiveLoad * 5);
 
   // Tap-to-select: apply an action to the oldest eligible active sphere,
-  // mirroring the keyboard shortcut logic — an alternative for users who
-  // find the swipe/hold gesture difficult.
+  // accessible via on-screen cyber dock or keyboard controls.
   const tapAction = (action: SphereAction) => {
     const gs = useGameStore.getState();
     if (gs.phase !== 'playing' || gs.paused) return;
@@ -191,6 +200,12 @@ export function PlayingHUD() {
       (s) => !s.isDistractor && s.color !== 'red' && gs.rules[s.color] === action
     );
     if (target) {
+      sound.playHit();
+      useBurstStore.getState().triggerBurst(
+        target.position,
+        target.color === 'green' ? '#00ff88' : target.color === 'blue' ? '#00d4ff' : '#ffd60a',
+        action === 'left' ? '← LEFT' : action === 'right' ? 'RIGHT →' : 'HELD'
+      );
       gs.registerInput({
         sphereId: target.id,
         action,
@@ -233,9 +248,18 @@ export function PlayingHUD() {
           </div>
         </div>
 
-        {/* Sensor & Pause / Stop */}
+        {/* Audio Toggle & Pause / Stop */}
         <div className="flex items-center gap-2 pointer-events-auto">
-          <SensorBadge />
+          <button
+            className="glass px-3 py-2.5 flex items-center justify-center text-slate-400 hover:text-white hover:border-white/20 transition-all text-xs"
+            onClick={() => {
+              const next = sound.toggleMute();
+              setIsMuted(next);
+            }}
+            title={isMuted ? 'Unmute Audio' : 'Mute Audio'}
+          >
+            {isMuted ? <VolumeX size={15} /> : <Volume2 size={15} className="text-cyan-400" />}
+          </button>
           <button
             className="glass px-4 py-2.5 flex items-center gap-2
                        text-slate-400 hover:text-white hover:border-white/20 transition-all
@@ -259,29 +283,44 @@ export function PlayingHUD() {
       {/* ── AI patient-state + RL action insight ── */}
       <AIInsightsPanel />
 
-      {/* ── Tap-to-select controls (alternative to swipe/hold) ── */}
-      {tapToSelect && (
-        <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-3 pointer-events-auto">
-          <button
-            className="glass px-6 py-3 text-sm font-display tracking-widest uppercase text-slate-300 hover:text-white transition-all"
-            onClick={() => tapAction('left')}
-          >
-            ← Left
-          </button>
-          <button
-            className="glass px-6 py-3 text-sm font-display tracking-widest uppercase text-slate-300 hover:text-white transition-all"
-            onClick={() => tapAction('hold')}
-          >
-            ⏸ Hold
-          </button>
-          <button
-            className="glass px-6 py-3 text-sm font-display tracking-widest uppercase text-slate-300 hover:text-white transition-all"
-            onClick={() => tapAction('right')}
-          >
-            Right →
-          </button>
-        </div>
-      )}
+      {/* ── Cyber Action Dock (Accessible for all users without hardware) ── */}
+      <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-2.5 pointer-events-auto z-20">
+        <button
+          className="group glass px-5 py-2.5 rounded-xl flex items-center gap-2 border border-cyan-500/30 hover:border-cyan-400/80 bg-slate-900/85 hover:bg-cyan-950/40 text-slate-200 hover:text-white transition-all transform active:scale-95 shadow-xl hover:shadow-cyan-500/20"
+          onClick={() => tapAction('left')}
+          title="Swipe Left (or press ← Arrow)"
+        >
+          <span className="font-mono text-cyan-400 font-bold text-sm">←</span>
+          <span className="font-display text-xs tracking-wider uppercase font-semibold">Left</span>
+          <span className="hidden sm:inline text-[9px] font-mono px-1.5 py-0.5 rounded bg-white/5 text-slate-400 border border-white/10 group-hover:border-cyan-400/40">
+            [←]
+          </span>
+        </button>
+
+        <button
+          className="group glass px-5 py-2.5 rounded-xl flex items-center gap-2 border border-yellow-500/30 hover:border-yellow-400/80 bg-slate-900/85 hover:bg-yellow-950/40 text-slate-200 hover:text-white transition-all transform active:scale-95 shadow-xl hover:shadow-yellow-500/20"
+          onClick={() => tapAction('hold')}
+          title="Steady Hold (or press Spacebar)"
+        >
+          <span className="font-mono text-yellow-400 font-bold text-sm">⏸</span>
+          <span className="font-display text-xs tracking-wider uppercase font-semibold">Hold</span>
+          <span className="hidden sm:inline text-[9px] font-mono px-1.5 py-0.5 rounded bg-white/5 text-slate-400 border border-white/10 group-hover:border-yellow-400/40">
+            [Space]
+          </span>
+        </button>
+
+        <button
+          className="group glass px-5 py-2.5 rounded-xl flex items-center gap-2 border border-emerald-500/30 hover:border-emerald-400/80 bg-slate-900/85 hover:bg-emerald-950/40 text-slate-200 hover:text-white transition-all transform active:scale-95 shadow-xl hover:shadow-emerald-500/20"
+          onClick={() => tapAction('right')}
+          title="Swipe Right (or press → Arrow)"
+        >
+          <span className="font-display text-xs tracking-wider uppercase font-semibold">Right</span>
+          <span className="font-mono text-emerald-400 font-bold text-sm">→</span>
+          <span className="hidden sm:inline text-[9px] font-mono px-1.5 py-0.5 rounded bg-white/5 text-slate-400 border border-white/10 group-hover:border-emerald-400/40">
+            [→]
+          </span>
+        </button>
+      </div>
 
       {/* ── Rules panel (bottom-left) ── */}
       <div className="absolute bottom-5 left-5 glass px-4 py-4 animate-fade-up">
@@ -319,6 +358,16 @@ export function PlayingHUD() {
             <span className="text-[12px] text-slate-500 uppercase tracking-widest">Reactions</span>
             <span className="font-mono text-sm font-bold text-slate-300">{totalR}</span>
           </div>
+          {metrics.correctReactions >= 3 && (
+            <div className="flex justify-between items-center pt-1 border-t border-white/5">
+              <span className="text-[11px] text-amber-400 uppercase tracking-widest flex items-center gap-1 font-semibold">
+                <Flame size={12} className="text-amber-400 animate-pulse" /> Streak
+              </span>
+              <span className="font-mono text-xs font-bold text-amber-300">
+                {metrics.correctReactions}x
+              </span>
+            </div>
+          )}
           {fatigue > 0.5 && (
             <div className="mt-2 pt-2 border-t border-white/5 flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />

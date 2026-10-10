@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+*.zip
+*.command
+.deck-build
+*.js.map
+__pycache__/
+*.pyc
